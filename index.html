@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0d10" />
+<title>Solution Color Guide — Gold Refining</title>
+<style>
+  :root {
+    --bg: #0d0d10;
+    --panel: #18181d;
+    --panel-2: #22222a;
+    --text: #f0f0f0;
+    --text-dim: #999;
+    --accent: #ffb000;
+    --warn: #ff5050;
+    --good: #50d090;
+    --border: #2a2a32;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+  header {
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 8px;
+    background: var(--panel-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  main {
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  /* ---------- Reference grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (min-width: 600px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .card:active { transform: scale(0.98); }
+  .swatch {
+    height: 90px;
+    width: 100%;
+  }
+  .swatch.gradient {
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+  }
+  .card-body {
+    padding: 10px 12px;
+  }
+  .card-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  .card-formula {
+    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .card-tldr {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  /* ---------- Detail modal ---------- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal.open { display: flex; }
+  .sheet {
+    background: var(--panel);
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: slideup 0.2s ease;
+  }
+  @keyframes slideup {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .sheet-swatch {
+    height: 120px;
+    width: 100%;
+  }
+  .sheet-content {
+    padding: 16px 20px 20px;
+  }
+  .sheet-name {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+  }
+  .sheet-formula {
+    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .sheet-section {
+    margin-bottom: 14px;
+  }
+  .sheet-section h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin: 0 0 4px 0;
+    font-weight: 600;
+  }
+  .sheet-section p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .close-btn {
+    position: sticky;
+    top: 0;
+    float: right;
+    margin: 12px;
+    background: rgba(0,0,0,0.6);
+    color: var(--text);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  /* ---------- Identify mode ---------- */
+  .identify-area {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .file-zone {
+    background: var(--panel);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+  }
+  .file-zone label {
+    display: inline-block;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .file-zone input { display: none; }
+  .file-hint {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .photo-container {
+    position: relative;
+    background: var(--panel);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .photo-container canvas {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    box-shadow: 0 0 0 2px #000;
+  }
+  .result {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .result.hidden { display: none; }
+  .result-swatch-row {
+    display: flex;
+    height: 70px;
+  }
+  .result-swatch-half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .result-body {
+    padding: 14px 16px;
+  }
+  .result-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+  }
+  .result-formula {
+    font-family: ui-monospace, monospace;
+    color: var(--accent);
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .result-confidence {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .result-meaning {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .result-warning {
+    background: rgba(255,176,0,0.1);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    border-radius: 0 6px 6px 0;
+  }
+  .alts {
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .alts strong { color: var(--text); font-weight: 600; }
+  /* ---------- Tips footer ---------- */
+  .tips {
+    margin-top: 24px;
+    padding: 14px;
+    background: var(--panel);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .tips h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    margin: 0 0 8px 0;
+    font-weight: 600;
+  }
+  .tips ul { margin: 0; padding-left: 18px; }
+  .tips li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧪 Solution Color Guide</h1>
+  <div class="tabs">
+    <div class="tab active" data-tab="reference" onclick="setTab('reference')">Reference</div>
+    <div class="tab" data-tab="identify" onclick="setTab('identify')">Identify from Photo</div>
+  </div>
+</header>
+
+<main>
+  <!-- Reference tab -->
+  <section id="tab-reference">
+    <div class="grid" id="colorGrid"></div>
+
+    <div class="tips">
+      <h3>How to use</h3>
+      <ul>
+        <li>Tap any color for details on what it means and what to do next.</li>
+        <li>Hold your phone next to the beaker for direct comparison.</li>
+        <li>For "is this gold or just iron?" — see the bench tip in the gold entries.</li>
+        <li>Switch to <strong>Identify</strong> tab to sample a photo and get a best-match read.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Identify tab -->
+  <section id="tab-identify" style="display:none;">
+    <div class="identify-area">
+      <div class="file-zone" id="fileZone">
+        <label for="photoInput">📷 Take or Choose Photo</label>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" />
+        <div class="file-hint">Snap a photo of your solution under good light. Then tap the area of the solution on the photo to identify.</div>
+      </div>
+
+      <div class="photo-container" id="photoContainer" style="display:none;">
+        <canvas id="photoCanvas"></canvas>
+        <div class="marker" id="marker" style="display:none;"></div>
+      </div>
+
+      <div class="result hidden" id="result">
+        <div class="result-swatch-row">
+          <div class="result-swatch-half" id="sampleSwatch">Your sample</div>
+          <div class="result-swatch-half" id="matchSwatch">Best match</div>
+        </div>
+        <div class="result-body">
+          <div class="result-title" id="resultName">—</div>
+          <div class="result-formula" id="resultFormula">—</div>
+          <div class="result-confidence" id="resultConfidence">—</div>
+          <div class="result-meaning" id="resultMeaning">—</div>
+          <div class="result-warning" id="resultWarning" style="display:none;">—</div>
+        </div>
+        <div class="alts" id="alts"></div>
+      </div>
+
+      <div class="tips">
+        <h3>Tips for good photos</h3>
+        <ul>
+          <li>Daylight or bright white LED — avoid yellow indoor bulbs (skews readings).</li>
+          <li>Plain white or gray background behind clear glass — color reads correctly.</li>
+          <li>Don't use flash — creates highlights that confuse the matcher.</li>
+          <li>Fill most of the frame with the solution. Tap the middle of the clearest area.</li>
+          <li>Camera matches are approximate — always cross-check with reference colors and chemistry context.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal -->
+  <div class="modal" id="modal" onclick="closeModal(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <div class="sheet-swatch" id="modalSwatch"></div>
+      <div class="sheet-content">
+        <h2 class="sheet-name" id="modalName">—</h2>
+        <div class="sheet-formula" id="modalFormula">—</div>
+        <div class="sheet-section">
+          <h3>What this color means</h3>
+          <p id="modalMeaning">—</p>
+        </div>
+        <div class="sheet-section">
+          <h3>What's likely in your solution</h3>
+          <p id="modalComposition">—</p>
+        </div>
+        <div class="sheet-section">
+          <h3>Next step</h3>
+          <p id="modalNext">—</p>
+        </div>
+        <div class="sheet-section" id="modalGotchaSection">
+          <h3>Watch for</h3>
+          <p id="modalGotcha">—</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============ COLOR DATABASE ============
+// Each entry has hex(es) for matching, plus rich info for detail view.
+const COLORS = [
+  {
+    id: 'au-dilute',
+    name: 'Gold Chloride (dilute)',
+    formula: 'AuCl₄⁻ · dilute',
+    colors: ['#f8d62a', '#f1c40f'],
+    tldr: 'Bright yellow — gold is dissolved.',
+    meaning: 'Clear, bright lemon-yellow. This is gold in solution as the tetrachloroaurate complex. Indicates an active aqua regia or poor man\'s AR digestion in progress.',
+    composition: 'AuCl₄⁻ ions in HCl + nitric/nitrate solution. May also contain dissolved base metals.',
+    next: 'Continue dissolving until reaction stops (no more orange NO₂ fumes when adding saltpeter). Then proceed to urea de-nox → SMB drop.',
+    gotcha: 'Iron(III) also looks yellow — could be confused with this. Do the drop test: small sample + urea (until no fizz) + SMB. If brown/black powder drops, that\'s gold confirmed.'
+  },
+  {
+    id: 'au-conc',
+    name: 'Gold Chloride (concentrated)',
+    formula: 'AuCl₄⁻ · concentrated',
+    colors: ['#e88a00', '#d97706'],
+    tldr: 'Deep yellow-orange — lots of dissolved gold.',
+    meaning: 'Rich orange-yellow, sometimes compared to Mountain Dew or strong tea. Indicates a meaningful amount of gold has dissolved into a relatively small volume of AR.',
+    composition: 'Concentrated AuCl₄⁻ in AR. The deeper color = more gold per mL.',
+    next: 'Decant or filter off any undissolved solids. Dilute with 2x water before urea de-nox + SMB drop, so the drop is more controlled.',
+    gotcha: 'Strong color = strong AR. Be extra cautious with PPE and ventilation when adding urea — the fizzing reaction is more vigorous in concentrated solution.'
+  },
+  {
+    id: 'fe3-dilute',
+    name: 'Ferric Chloride (dilute)',
+    formula: 'FeCl₃ · dilute',
+    colors: ['#c8a02a', '#d4a017'],
+    tldr: 'Lemon-amber yellow — dissolved iron(III).',
+    meaning: 'Yellow with a slightly olive/amber cast. This is iron(III) chloride — the form iron takes after oxidation in HCl.',
+    composition: 'FeCl₃ in HCl solution. Typical of HCl wash on iron-rich material (pyrite calcine, e-scrap with iron).',
+    next: 'This is waste from the iron-removal step. Filter off the residue (your gold-bearing fraction stays in the filter). Neutralize the iron solution with baking soda before disposal.',
+    gotcha: 'Looks similar to dilute gold chloride. Tell them apart: gold chloride is brighter and slightly more orange-tinted; iron is more olive/amber. Drop test (urea + SMB) confirms which is which.'
+  },
+  {
+    id: 'fe3-conc',
+    name: 'Ferric Chloride (concentrated)',
+    formula: 'FeCl₃ · concentrated',
+    colors: ['#a8531a', '#8b4513'],
+    tldr: 'Brown-red — iron-saturated solution.',
+    meaning: 'Deep rust-brown to brick-red. Iron-saturated HCl solution. Often what you see after extensive iron leaching on a high-iron feedstock.',
+    composition: 'Concentrated FeCl₃, possibly with iron oxychloride species at very high concentration.',
+    next: 'Iron-removal step is doing its job. Filter, set aside the residue (which contains the precious metals), dispose of the iron solution properly (cement out heavies with copperas, then neutralize).',
+    gotcha: 'If you expected to see yellow-orange gold-bearing AR but got brown — you may have too much iron contamination from skipping an earlier wash. Re-run the HCl wash on the residue to clean it before AR.'
+  },
+  {
+    id: 'fe2',
+    name: 'Ferrous Chloride',
+    formula: 'FeCl₂',
+    colors: ['#a5d6a7', '#90c890'],
+    tldr: 'Pale apple-green — reduced iron.',
+    meaning: 'Soft pale green. Iron in the reduced (Fe²⁺) state. Indicates something has been reducing your iron from Fe³⁺ down to Fe²⁺.',
+    composition: 'FeCl₂ in HCl. The reduction usually comes from contact with iron metal, or from too-much SMB during a drop.',
+    next: 'If this appeared during your gold drop — fine, urea/SMB also reduces iron, won\'t affect gold recovery. If during a leach step, it means oxidant ran out; add more peroxide or saltpeter.',
+    gotcha: 'On exposure to air, Fe²⁺ slowly re-oxidizes to Fe³⁺ (back to yellow). If you leave a beaker overnight, expect color shift.'
+  },
+  {
+    id: 'cu-dilute',
+    name: 'Copper Chloride (dilute)',
+    formula: 'CuCl₂ · dilute',
+    colors: ['#4a9bd1', '#5dadec'],
+    tldr: 'Sky-blue — dissolved copper.',
+    meaning: 'Clear sky-blue. Copper in solution as CuCl₂. Indicates either AP (HCl + H₂O₂) is dissolving copper substrate, or HCl alone hit copper hydroxide / oxide.',
+    composition: 'CuCl₂ in HCl. Common during e-scrap processing or after caustic leach on copper-bearing cons.',
+    next: 'If this is from AP eating away copper substrate to free gold foils — let it continue until reaction stops. If this is from HCl wash, you\'re cleaning copper out of your residue.',
+    gotcha: 'If solution turns green over time (not staying blue), iron is mixing in. Often happens with mixed cons.'
+  },
+  {
+    id: 'cu-conc',
+    name: 'Copper Chloride (concentrated)',
+    formula: 'CuCl₂ · concentrated',
+    colors: ['#1a6b5b', '#2c8074'],
+    tldr: 'Dark teal — saturated copper solution.',
+    meaning: 'Deep blue-green or dark teal. Highly concentrated copper chloride — common after lots of e-scrap dissolution or repeated AP passes.',
+    composition: 'Saturated CuCl₂, possibly with chloro-copper complexes. Solution is "spent" — won\'t dissolve much more copper.',
+    next: 'Time to filter out residue (foils!) and recycle or dispose of the copper solution. Cement copper out by adding iron filings — drops as red copper sludge that can be recovered or disposed.',
+    gotcha: 'Don\'t pour this down the drain — it\'s a hazardous waste. Cement out the copper first.'
+  },
+  {
+    id: 'cu-sulfate',
+    name: 'Copper Sulfate',
+    formula: 'CuSO₄',
+    colors: ['#3399ff', '#1e90ff'],
+    tldr: 'Bright sky blue — copper in sulfate solution.',
+    meaning: 'Vivid bright blue. Classic copper sulfate color — usually means a sulfate-system reaction (sulfide oxidation, or sulfuric acid step).',
+    composition: 'CuSO₄ in aqueous solution. From sulfide breakdown in caustic leach (sulfate is the breakdown product of sulfide).',
+    next: 'Confirms your sulfide breakdown worked (sulfur went into solution as sulfate, copper followed). Filter, save the residue, dispose of solution properly.',
+    gotcha: 'Sometimes confused with CuCl₂ — CuSO₄ is more pure-blue, CuCl₂ tends slightly greener.'
+  },
+  {
+    id: 'cu-hydroxide',
+    name: 'Copper Hydroxide Sludge',
+    formula: 'Cu(OH)₂',
+    colors: ['#5fab9c', '#7ebbb0'],
+    tldr: 'Blue-green sludge — copper precipitated.',
+    meaning: 'Pale teal/cyan sludge sitting in basic (caustic) solution. Copper(II) hydroxide — drops out when copper hits a strongly alkaline environment.',
+    composition: 'Cu(OH)₂ solid suspended/settled in NaOH solution. Common in post-caustic-leach residue if the cons had copper minerals.',
+    next: 'Rinse residue thoroughly with water (get the caustic out). Then HCl wash dissolves the copper hydroxide back into solution (turns blue) — and gold stays as solid in the filter.',
+    gotcha: 'If your post-caustic sludge is blue-green, you have chalcopyrite or other copper minerals in your cons. Worth noting for future runs — could even be worth recovering the copper separately.'
+  },
+  {
+    id: 'fe-hydroxide',
+    name: 'Iron Hydroxide Sludge',
+    formula: 'Fe(OH)₂ / Fe(OH)₃',
+    colors: ['#8a8c5f', '#a87145'],
+    tldr: 'Gray-green to rust-brown sludge.',
+    meaning: 'Gray-green (Fe²⁺ form) shifting to rust-brown (Fe³⁺ form on air exposure). Iron precipitated as hydroxide in basic solution.',
+    composition: 'Fe(OH)₂ initially, slowly oxidizing to Fe(OH)₃ on air exposure. Typical post-caustic-leach residue from pyrite cons.',
+    next: 'Rinse caustic out, then HCl wash dissolves iron hydroxide as FeCl₂/FeCl₃ (yellow-green solution). What\'s left in the filter is your gold-bearing concentrate.',
+    gotcha: 'Iron hydroxide is gelatinous and slow to filter. Be patient or upgrade your filtration setup (paint strainer bag, Buchner funnel).'
+  },
+  {
+    id: 'ni',
+    name: 'Nickel Chloride',
+    formula: 'NiCl₂',
+    colors: ['#7fb38a', '#5fa570'],
+    tldr: 'Apple green — nickel in solution.',
+    meaning: 'Cooler green than copper, more "leaf green." Nickel chloride. Less common than Cu/Fe but shows up in certain ore types and some alloys.',
+    composition: 'NiCl₂ in HCl. Possible if cons contain pentlandite, millerite, or other Ni minerals; or from nickel-containing alloys in e-scrap (some plating, some stainless components).',
+    next: 'Nickel is a chemistry distractor — doesn\'t affect gold recovery. Filter as usual. If significant Ni content, may want to separate streams for Ni recovery in a later step.',
+    gotcha: 'Easy to confuse with FeCl₂ (also pale green). Nickel chloride is a slightly more saturated green; ferrous is paler and washed-out.'
+  },
+  {
+    id: 'co',
+    name: 'Cobalt Chloride',
+    formula: 'CoCl₂',
+    colors: ['#d63a52', '#c2185b'],
+    tldr: 'Pink/magenta — cobalt is present.',
+    meaning: 'Bright pink in dilute solution, magenta when concentrated. Cobalt chloride. Uncommon but striking — if you see this you definitely have cobalt.',
+    composition: 'CoCl₂ in aqueous solution. Possible in some sulfide ores (cobaltite), specialty alloys, lithium battery e-scrap (don\'t process raw batteries).',
+    next: 'Note for the records. Cobalt doesn\'t interfere with gold recovery, but if you see this pink color in batch chemistry, you may have processed something unexpected.',
+    gotcha: 'Pink solution from chemistry usually means cobalt — but check that you haven\'t accidentally processed something with permanganate (purple) or chromium (green/violet).'
+  },
+  {
+    id: 'silver-cement',
+    name: 'AgCl precipitate / Silver-Ammine',
+    formula: 'AgCl ↓ / [Ag(NH₃)₂]⁺',
+    colors: ['#e8e8e8', '#c8c8c8'],
+    tldr: 'White curd or colorless ammonia complex.',
+    meaning: 'White cottage-cheese-like solid that drops when silver hits chloride; OR a colorless ammonia solution if you\'ve added ammonia to redissolve the AgCl.',
+    composition: 'Silver chloride (AgCl) is white. Silver dissolved in ammonia as silver-ammine ([Ag(NH₃)₂]⁺) is clear/colorless.',
+    next: 'If you have AgCl, treat as silver recovery. Redissolve in ammonia, then drop with formaldehyde or sugar → metallic silver. Different protocol from gold.',
+    gotcha: '**NEVER** mix silver-ammine solution with anything containing gold — risk of explosive silver fulminate. Keep silver recovery completely separate from gold work.'
+  },
+  {
+    id: 'pma-mess',
+    name: 'Murky Brown/Black Solution',
+    formula: 'Mixed sludge in suspension',
+    colors: ['#3a2e22', '#2e2018'],
+    tldr: 'Stuff suspended, not dissolved.',
+    meaning: 'Solution is opaque, brown-black, often with visible particulate. Means you have a lot of fine solid in suspension — your dissolution isn\'t complete, or you have organic contamination, or your filter clogged and stuff is bleeding through.',
+    composition: 'Could be: incompletely dissolved sulfides, organic gunk from paper, fine ferric oxide colloids, mixed sludge.',
+    next: 'Let it settle for a few hours, then filter. If it won\'t settle, add a small amount of HCl and warm — sometimes acidification clears suspended hydroxides. If still murky, double-filter.',
+    gotcha: 'Don\'t add SMB to murky solution — you can\'t see what\'s dropping vs what was already suspended. Always filter clear before trying to drop gold.'
+  },
+  {
+    id: 'no2-fume',
+    name: 'Brown-Orange Fumes (over solution)',
+    formula: 'NO₂ gas',
+    colors: ['#b85c2e', '#d2691e'],
+    tldr: 'Active AR — gold is dissolving.',
+    meaning: 'Brown-orange gas rising off the surface of the solution. Nitrogen dioxide. This is the working signal of poor man\'s AR or aqua regia in action — generated when nitric acid (from saltpeter) attacks metal.',
+    composition: 'NO₂ gas, with smaller amounts of N₂O₃ and other nitrogen oxides. Hazardous to inhale.',
+    next: 'Outdoor work only. Stay upwind. Continue adding saltpeter in small amounts until adding more produces no new fumes — that\'s the endpoint: no more dissolvable metal.',
+    gotcha: 'These fumes are dangerous — they can cause delayed pulmonary edema (lung injury that shows up hours after exposure). If you breathe a noseful, get to fresh air immediately and consider medical evaluation.'
+  },
+];
+
+// ============ REFERENCE GRID ============
+function renderGrid() {
+  const grid = document.getElementById('colorGrid');
+  grid.innerHTML = COLORS.map((c, i) => {
+    const gradStyle = c.colors.length > 1
+      ? `background: linear-gradient(90deg, ${c.colors[0]}, ${c.colors[1]});`
+      : `background: ${c.colors[0]};`;
+    return `
+      <div class="card" onclick="openModal(${i})">
+        <div class="swatch" style="${gradStyle}"></div>
+        <div class="card-body">
+          <div class="card-name">${c.name}</div>
+          <div class="card-formula">${c.formula}</div>
+          <div class="card-tldr">${c.tldr}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============ MODAL DETAIL ============
+function openModal(i) {
+  const c = COLORS[i];
+  const gradStyle = c.colors.length > 1
+    ? `background: linear-gradient(90deg, ${c.colors[0]}, ${c.colors[1]});`
+    : `background: ${c.colors[0]};`;
+  document.getElementById('modalSwatch').style.cssText = gradStyle;
+  document.getElementById('modalName').textContent = c.name;
+  document.getElementById('modalFormula').textContent = c.formula;
+  document.getElementById('modalMeaning').textContent = c.meaning;
+  document.getElementById('modalComposition').textContent = c.composition;
+  document.getElementById('modalNext').textContent = c.next;
+  document.getElementById('modalGotcha').textContent = c.gotcha;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e) {
+  if (e && e.target.id && e.target.id !== 'modal') return;
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ============ TABS ============
+function setTab(name) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.getElementById('tab-reference').style.display = name === 'reference' ? 'block' : 'none';
+  document.getElementById('tab-identify').style.display = name === 'identify' ? 'block' : 'none';
+}
+
+// ============ COLOR MATCHING ============
+// Convert hex to RGB
+function hex2rgb(hex) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substr(0, 2), 16),
+    g: parseInt(h.substr(2, 2), 16),
+    b: parseInt(h.substr(4, 2), 16)
+  };
+}
+// Convert RGB to LAB color space (better perceptual distance)
+function rgb2lab(rgb) {
+  let { r, g, b } = rgb;
+  r /= 255; g /= 255; b /= 255;
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+  let x = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047;
+  let y = (r * 0.2126729 + g * 0.7151522 + b * 0.0721750) / 1.00000;
+  let z = (r * 0.0193339 + g * 0.1191920 + b * 0.9503041) / 1.08883;
+  x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
+  y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
+  z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
+  return { l: (116 * y) - 16, a: 500 * (x - y), b: 200 * (y - z) };
+}
+// Delta E (perceptual color distance)
+function deltaE(lab1, lab2) {
+  const dl = lab1.l - lab2.l;
+  const da = lab1.a - lab2.a;
+  const db = lab1.b - lab2.b;
+  return Math.sqrt(dl*dl + da*da + db*db);
+}
+// Find closest matches in DB
+function findMatches(sampleHex) {
+  const sampleLab = rgb2lab(hex2rgb(sampleHex));
+  const matches = COLORS.map((c, i) => {
+    // Use average of all swatches for this entry
+    const distances = c.colors.map(hex => deltaE(sampleLab, rgb2lab(hex2rgb(hex))));
+    const minDist = Math.min(...distances);
+    return { color: c, index: i, distance: minDist };
+  });
+  matches.sort((a, b) => a.distance - b.distance);
+  return matches;
+}
+
+// ============ IDENTIFY MODE ============
+let currentImage = null;
+const photoInput = document.getElementById('photoInput');
+photoInput.addEventListener('change', handlePhoto);
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      currentImage = img;
+      drawPhoto();
+      document.getElementById('photoContainer').style.display = 'block';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function drawPhoto() {
+  const canvas = document.getElementById('photoCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  // Resize to fit while preserving aspect
+  const maxW = 1024;
+  const scale = Math.min(1, maxW / currentImage.width);
+  canvas.width = currentImage.width * scale;
+  canvas.height = currentImage.height * scale;
+  ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+  document.getElementById('marker').style.display = 'none';
+  document.getElementById('result').classList.add('hidden');
+}
+function getCanvasPos(e) {
+  const canvas = document.getElementById('photoCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  const x = (t.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (t.clientY - rect.top) * (canvas.height / rect.height);
+  return { x, y, screenX: t.clientX - rect.left, screenY: t.clientY - rect.top };
+}
+function sampleColor(e) {
+  e.preventDefault();
+  if (!currentImage) return;
+  const canvas = document.getElementById('photoCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const pos = getCanvasPos(e);
+  // Average a small patch (5x5) to reduce noise
+  const patch = ctx.getImageData(Math.max(0, pos.x - 2), Math.max(0, pos.y - 2), 5, 5);
+  let r = 0, g = 0, b = 0;
+  const n = patch.data.length / 4;
+  for (let i = 0; i < patch.data.length; i += 4) {
+    r += patch.data[i];
+    g += patch.data[i+1];
+    b += patch.data[i+2];
+  }
+  r = Math.round(r / n);
+  g = Math.round(g / n);
+  b = Math.round(b / n);
+  const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  // Move marker
+  const marker = document.getElementById('marker');
+  marker.style.display = 'block';
+  marker.style.left = pos.screenX + 'px';
+  marker.style.top = pos.screenY + 'px';
+  marker.style.background = hex;
+  // Show results
+  showResult(hex);
+}
+const canvas = document.getElementById('photoCanvas');
+canvas.addEventListener('click', sampleColor);
+canvas.addEventListener('touchstart', sampleColor, { passive: false });
+
+function showResult(sampleHex) {
+  const matches = findMatches(sampleHex);
+  const best = matches[0];
+  const result = document.getElementById('result');
+  result.classList.remove('hidden');
+  document.getElementById('sampleSwatch').style.background = sampleHex;
+  document.getElementById('sampleSwatch').textContent = 'Your sample';
+  document.getElementById('matchSwatch').style.background = best.color.colors[0];
+  document.getElementById('matchSwatch').textContent = 'Best match';
+  document.getElementById('resultName').textContent = best.color.name;
+  document.getElementById('resultFormula').textContent = best.color.formula;
+  // Confidence based on delta E
+  let confidence, warning = null;
+  if (best.distance < 8) confidence = 'Very close match';
+  else if (best.distance < 18) confidence = 'Likely match';
+  else if (best.distance < 30) confidence = 'Rough match — verify with chemistry context';
+  else { confidence = 'Weak match — lighting may be off, or this isn\'t a known solution color';
+    warning = 'The sampled color doesn\'t match any reference closely. Re-take the photo in better light, or sample a clearer area. Also check that what you\'re looking at really is a chemistry product (vs reflection, glass tint, or background showing through).';
+  }
+  document.getElementById('resultConfidence').textContent = `${confidence} · ΔE = ${best.distance.toFixed(1)}`;
+  document.getElementById('resultMeaning').textContent = best.color.meaning;
+  const warnEl = document.getElementById('resultWarning');
+  if (warning) { warnEl.textContent = warning; warnEl.style.display = 'block'; }
+  else { warnEl.style.display = 'none'; }
+  // Alternatives
+  const alts = matches.slice(1, 4).map(m =>
+    `<strong>${m.color.name}</strong> (ΔE ${m.distance.toFixed(1)})`
+  ).join(' · ');
+  document.getElementById('alts').innerHTML = 'Other possibilities: ' + alts;
+}
+
+// Init
+renderGrid();
+</script>
+</body>
+</html>
